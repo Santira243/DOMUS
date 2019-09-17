@@ -1,23 +1,28 @@
-/* 
+/* HID Joystick Mouse Example
+   by: Jim Lindblom
+   date: 1/12/2012
+   license: MIT License - Feel free to use this code for any purpose.
+   No restrictions. Just keep this license if you go on to use this
+   code in your future endeavors! Reuse and share.
  
+   This is very simplistic code that allows you to turn the 
+   SparkFun Thumb Joystick (http://www.sparkfun.com/products/9032)
+   into an HID Mouse. The select button on the joystick is set up
+   as the mouse left click. 
  */
 
-#include <Mouse.h>  // Use built-in Mouse library
+#include "Mouse.h"
 #include <ArduinoJson.h>
 
 #include <SoftwareSerial.h>
-#include <Ultrasonic.h>
 
-Ultrasonic ultrasonic(3, 2);
 
+// Define Trig and Echo pin:
+#define trigPin 3
+#define echoPin 2
 #define sensitivity 10
-#define switch_uno 7  // IF ON -> ACELEROMETER OFF -> Mouse_ACCEL OFF & SONAR ON
-#define btn1 18
-#define btn2 15
-#define btn3 14
-#define btn4 16
-#define btn5 10
-#define tiempo_rebote 1000
+#define switch_uno 7
+
 
 String inputString = "";         // a String to hold incoming data
 bool stringComplete = false;  // whether the string is complete
@@ -33,100 +38,55 @@ int distance;
 long time_ultrasound;
 boolean distancia;
 boolean medido;
-int altura;
-int btn;
-boolean boton1,boton2,boton3,boton4,boton5;
-double bt1,bt2,bt3,bt4,bt5;
-double ahora;
+
+void Echo()
+{
+ // Clear the trigPin by setting it LOW:
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(5);
+  // Trigger the sensor by setting the trigPin high for 10 microseconds:
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  // Read the echoPin, pulseIn() returns the duration (length of the pulse) in microseconds:
+  duration = pulseIn(echoPin, HIGH);
+  // Calculate the distance:
+  distance= duration*0.034/2;
+  medido = true;
+}
+
 void setup()
 {
   Serial.begin(115200);
   mySerial.begin(57600);
-  pinMode(switch_uno, INPUT);  // 
-  pinMode(btn1, INPUT);  // 
-  pinMode(btn2, INPUT);  // 
-  pinMode(btn3, INPUT);  // 
-  pinMode(btn4, INPUT);  // 
-  pinMode(btn5, INPUT);  // 
-  
+  pinMode(switch_uno, INPUT);  // Set both analog pins as inputs
   pinMode(LED_BUILTIN, OUTPUT);
-  ultrasonic.setTimeout(40000UL);
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
   time_ultrasound = millis();
   delay(1000);  // short delay to let outputs settle
   distancia = true;
-  altura = 0;
-  btn = 0;
-}
-
-void enviar_msg()
-{
-   String msg =("{\"altura\":"+String(altura)+"," + "\"btn\":" +String(btn)+"}"); //JSON!*/ 
-   Serial.println(msg);
 }
 
 void loop()
 {
   Switch = digitalRead(switch_uno);
-  boton1 = digitalRead(btn1);
-  boton2 = digitalRead(btn2);
-  boton3 = digitalRead(btn3);
-  boton4 = digitalRead(btn4);
-  boton5 = digitalRead(btn5);
-  btn = 0;
-  ahora = millis();
-  if((boton1) && ((ahora-bt1)>tiempo_rebote))
-  {
-      if(mouse_enabled)
-     {
-      Mouse.click();
-     }
-    btn = 1;
-    enviar_msg();
-    bt1 = ahora;
-  }
-  if((boton2) && ((ahora-bt2)>tiempo_rebote))
-  {
-    
-   if(mouse_enabled)
-     {
-      Mouse.click(MOUSE_RIGHT);
-     }
-    btn = 2;
-    enviar_msg();
-    bt2 = ahora;
-  }
-    if((boton3) && ((ahora-bt3)>tiempo_rebote))
-  {
-    btn = 3;
-    enviar_msg();
-    bt3 = ahora;
-  }
-    if((boton4) && ((ahora-bt4)>tiempo_rebote))
-  {
-    btn = 4;
-    enviar_msg();
-    bt4 = ahora;
-  }
-    if((boton5) && ((ahora-bt5)>tiempo_rebote))
-  {
-    btn = 5;
-    enviar_msg();
-    bt5 = ahora;
-  }  
-  
- 
   if((distancia) && (!mouse_enabled))
   {
-    if(millis()- time_ultrasound > 800)
+    if((millis()- time_ultrasound > 800) && (!medido))
      {
-      //Serial.print("Distance in CM: ");
-      //Serial.println(ultrasonic.read());
-     altura = ultrasonic.read();
-     time_ultrasound = millis();
-     enviar_msg();
-     } 
+    Echo();
+    time_ultrasound = millis();
+    } 
   }
-
+  if (medido)
+  {
+    Serial.print("Distance = ");
+    Serial.print(distance);
+    Serial.println(" cm");
+    delay(50); 
+    medido =false;
+  }
      if ((Switch== true) && (mouse_enabled == false))
   {
       Mouse.begin();
@@ -141,7 +101,7 @@ void loop()
     mouse_enabled = false;
     digitalWrite(LED_BUILTIN, LOW);   // turn the LED on (HIGH is the voltage level)
     delay(100);   
-    enviar_msg();
+    
    }
  if(mouse_enabled)
  {

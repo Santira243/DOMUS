@@ -16,26 +16,11 @@
   - ATSAMD21 (Arduino Zero, SparkFun SAMD21 Breakouts)
 *************************************************************/
 #include <SparkFunMPU9250-DMP.h>
-#include <Adafruit_NeoPixel.h>
-#ifdef __AVR__
-#include <avr/power.h> // Required for 16 MHz Adafruit Trinket
-#endif
-
-// Which pin on the Arduino is connected to the NeoPixels?
-#define PIN        2 // AL NEOPIXEL
-
-// How many NeoPixels are attached to the Arduino?
-#define NUMPIXELS 3 // Popular NeoPixel ring size
 
 
 
 MPU9250_DMP imu;
 float pitch, roll, yaw;
-Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
-
-#define DELAYVAL 500 // Time (in milliseconds) to pause between pixels
-
-
 void setup()
 {
   Serial.begin(115200);
@@ -85,12 +70,6 @@ void setup()
   // set using the setCompassSampleRate() function.
   // This value can range between: 1-100Hz
   imu.setCompassSampleRate(10); // Set mag rate to 10Hz
-#if defined(__AVR_ATtiny85__) && (F_CPU == 16000000)
-  clock_prescale_set(clock_div_1);
-#endif
-  // END of Trinket-specific code.
-
-  pixels.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
 }
 
 void loop()
@@ -109,8 +88,6 @@ void loop()
     //  so you don't have to specify these values.)
     imu.update(UPDATE_ACCEL | UPDATE_GYRO | UPDATE_COMPASS);
     printIMUData();
-    pixels.clear(); // Set all pixel colors to 'off'
-      
   }
 }
 
@@ -156,7 +133,5 @@ void printIMUData(void)
 //  Serial.println("yaw" + String( yaw ));
   String msg =("{\"pitch\":"+String(pitch)+"," + "\"roll\":" +String(roll) + "," +"\"yaw\":"+ String(yaw)+"}"); //JSON!*/ 
   Serial.println(msg);
-  pixels.setPixelColor(0, pixels.Color(map(pitch,-90,90,0,255),map(roll,-90,90,0,255), 0));
-  pixels.show();   // Send the updated pixel colors to the hardware.
-           
+              
 }
